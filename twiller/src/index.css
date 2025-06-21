@@ -11,3 +11,18 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.spinner {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   background: radial-gradient(farthest-side,#5f62e9 94%,#0000) top/6.4px 6.4px no-repeat,
+          conic-gradient(#0000 30%,#5f62e9);
+   -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 6.4px),#000 0);
+   animation: spinner-c7wet2 0.8s infinite linear;
+}
+
+@keyframes spinner-c7wet2 {
+   100% {
+      transform: rotate(1turn);
+   }
+}

@@ -13,6 +13,7 @@ const userAuthContext = createContext();
 
 export function UserAuthContextProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); 
 
   function logIn(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
@@ -35,6 +36,7 @@ export function UserAuthContextProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       console.log("Auth state changed:", currentUser);
       setUser(currentUser);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -42,7 +44,7 @@ export function UserAuthContextProvider({ children }) {
 
   return (
     <userAuthContext.Provider value={{ user, logIn, signUp, logOut, googleSignIn }}>
-      {children}
+      {!loading && children} 
     </userAuthContext.Provider>
   );
 }
