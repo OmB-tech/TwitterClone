@@ -1,33 +1,64 @@
 import React, { useState, useEffect, useRef } from "react";
-import Post from "../Posts/posts";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import Editprofile from "../Editprofile/Editprofile";
+import FollowButton from "./FollowButton";
+import axios from "axios";
+import useLoggedinuser from "../../../hooks/useLoggedinuser";
+import { useUserAuth } from "../../../context/UserAuthContext";
 import "./Mainprofile.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CenterFocusWeakIcon from "@mui/icons-material/CenterFocusWeak";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import AddLinkIcon from "@mui/icons-material/AddLink";
-import Editprofile from "../Editprofile/Editprofile";
-import axios from "axios";
-import useLoggedinuser from "../../../hooks/useLoggedinuser";
-
-const Mainprofile = ({ user }) => {
+import Post from "../Posts/posts"
+const Mainprofile = () => {
+  const { username: routeUsername } = useParams();
   const navigate = useNavigate();
-  const [isloading, setisloading] = useState(false);
+  const { user } = useUserAuth();
   const [loggedinuser] = useLoggedinuser();
-  const username = user?.email?.split("@")[0];
-  const [post, setpost] = useState([]);
+  const [profileUser, setProfileUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const avatarList = Array.from({ length: 16 }, (_, i) => `/avatars/${i + 1}_final.svg`);
   const avatarRef = useRef();
 
+  const username = routeUsername || loggedinuser[0]?.username;
+
+  const isOwnProfile = loggedinuser[0]?.email === profileUser?.email;
+
   useEffect(() => {
-    fetch(`http://localhost:5000/userpost?email=${user?.email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setpost(data);
-      });
-  }, [user.email]);
+    if (!username) return;
+
+    const fetchUserAndPosts = async () => {
+      setLoading(true);
+      try {
+        const userRes = await fetch(`http://localhost:5000/users?username=${username}`);
+        const userData = await userRes.json();
+
+        if (!userData || userData.length === 0) {
+          setProfileUser(null);
+          return;
+        }
+
+        const u = userData[0];
+        setProfileUser(u);
+
+        const postsRes = await fetch(`http://localhost:5000/userpost?email=${u.email}`);
+        const postsData = await postsRes.json();
+        postsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setPosts(postsData);
+      } catch (err) {
+        console.error("Error fetching user/posts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserAndPosts();
+  }, [username]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -35,6 +66,7 @@ const Mainprofile = ({ user }) => {
         setShowAvatarPicker(false);
       }
     };
+
     if (showAvatarPicker) {
       document.addEventListener("mousedown", handleClickOutside);
     }
@@ -43,195 +75,177 @@ const Mainprofile = ({ user }) => {
     };
   }, [showAvatarPicker]);
 
-  const handleuploadcoverimage = (e) => {
-    setisloading(true);
+  const handleUploadImage = (e, type) => {
+    setIsLoading(true);
     const image = e.target.files[0];
     const formData = new FormData();
     formData.set("image", image);
+
     axios
       .post("https://api.imgbb.com/1/upload?key=daa2ac1a5d20ec3d601828e4bf73164e", formData)
       .then((res) => {
         const url = res.data.data.display_url;
-        const usercoverimage = { email: user?.email, coverimage: url };
-        setisloading(false);
-        if (url) {
-          fetch(`http://localhost:5000/userupdate/${user?.email}`, {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(usercoverimage),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              console.log("done", data);
-            });
-        }
+        const payload = type === "cover"
+          ? { email: profileUser.email, coverImage: url }
+          : { email: profileUser.email, profileImage: url };
+
+        fetch(`http://localhost:5000/userupdate/${profileUser.email}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            setProfileUser((prev) => ({
+              ...prev,
+              ...(type === "cover" ? { coverImage: url } : { profileImage: url }),
+            }));
+            setShowAvatarPicker(false);
+            setIsLoading(false);
+          });
       })
-      .catch((e) => {
-        console.log(e);
-        window.alert(e);
-        setisloading(false);
+      .catch((err) => {
+        console.error(err);
+        window.alert("Image upload failed");
+        setIsLoading(false);
       });
   };
 
   const handleAvatarSelect = (avatarUrl) => {
-    setisloading(true);
-    const userprofileimage = { email: user?.email, profileImage: avatarUrl };
-    fetch(`http://localhost:5000/userupdate/${user?.email}`, {
+    setIsLoading(true);
+    const payload = { email: profileUser.email, profileImage: avatarUrl };
+    fetch(`http://localhost:5000/userupdate/${profileUser.email}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(userprofileimage),
+      body: JSON.stringify(payload),
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("Avatar updated", data);
-        setisloading(false);
+        setProfileUser((prev) => ({
+          ...prev,
+          profileImage: avatarUrl,
+        }));
         setShowAvatarPicker(false);
-      })
-      .catch((e) => {
-        console.log(e);
-        window.alert(e);
-        setisloading(false);
+        setIsLoading(false);
       });
   };
 
-  const handleuploadprofileimage = (e) => {
-    setisloading(true);
-    const image = e.target.files[0];
-    const formData = new FormData();
-    formData.set("image", image);
-    axios
-      .post("https://api.imgbb.com/1/upload?key=daa2ac1a5d20ec3d601828e4bf73164e", formData)
-      .then((res) => {
-        const url = res.data.data.display_url;
-        const userprofileimage = { email: user?.email, profileImage: url };
-        if (url) {
-          fetch(`http://localhost:5000/userupdate/${user?.email}`, {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(userprofileimage),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              console.log("done", data);
-              setisloading(false);
-              setShowAvatarPicker(false);
-            });
-        }
-      })
-      .catch((e) => {
-        console.log(e);
-        window.alert(e);
-        setisloading(false);
-      });
-  };
+  if (loading) return <div>Loading...</div>;
+  if (!profileUser) return <div>User not found</div>;
 
   return (
-    <div>
-      <ArrowBackIcon className="arrow-icon" onClick={() => navigate("/")} />
-      <h4 className="heading-4">{username}</h4>
-      <div className="mainprofile">
-        <div className="profile-bio">
-          <div>
-            <div className="coverImageContainer">
-              <img
-                src={loggedinuser[0]?.coverimage || user?.photoURL}
-                alt=""
-                className="coverImage"
-              />
-              <div className="hoverCoverImage">
-                <div className="imageIcon_tweetButton">
-                  <label htmlFor="image" className="imageIcon">
-                    {isloading ? (
-                      <LockResetIcon className="photoIcon photoIconDisabled" />
-                    ) : (
-                      <CenterFocusWeakIcon className="photoIcon" />
-                    )}
-                  </label>
-                  <input
-                    type="file"
-                    id="image"
-                    className="imageInput"
-                    onChange={handleuploadcoverimage}
-                  />
-                </div>
-              </div>
-            </div>
+    <div className="main-profile">
+      <ArrowBackIcon className="arrow-icon" onClick={() => navigate(-1)} />
+      <h4 className="heading-4">@{username}</h4>
 
-            <div className="avatar-img">
-              <div className="avatarContainer" ref={avatarRef}>
-                {isloading ? (
-                  <div className="spinner" />
-                ) : (
-                  <img
-                    src={loggedinuser[0]?.profileImage || user?.photoURL}
-                    alt=""
-                    className="avatar"
-                    onClick={() => setShowAvatarPicker(true)}
-                    style={{ cursor: "pointer" }}
-                  />
-                )}
-
-                {showAvatarPicker && (
-                  <div className="avatarPickerModal">
-                    <label htmlFor="uploadAvatar" className="upload-label">
-                      Upload from device:
-                    </label>
-                    <input
-                      type="file"
-                      id="uploadAvatar"
-                      accept="image/*"
-                      style={{ display: "block", marginTop: "8px" }}
-                      onChange={handleuploadprofileimage}
-                    />
-                    <p className="avatarPickerTitle">Or select an avatar from here:</p>
-                    <div className="avatarGrid">
-                      {avatarList.map((avatar, index) => (
-                        <img
-                          key={index}
-                          src={avatar}
-                          alt={`avatar${index + 1}`}
-                          className="avatarOption"
-                          onClick={() => handleAvatarSelect(avatar)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="userInfo">
-                <div>
-                  <h3 className="heading-3">
-                    {loggedinuser[0]?.name || user?.displayname}
-                  </h3>
-                  <p className="usernameSection">@{username}</p>
-                </div>
-                <Editprofile user={user} loggedinuser={loggedinuser} />
-              </div>
-
-              <div className="infoContainer">
-                {loggedinuser[0]?.bio && <p>{loggedinuser[0].bio}</p>}
-                <div className="locationAndLink">
-                  {loggedinuser[0]?.location && (
-                    <p className="suvInfo">
-                      <MyLocationIcon /> {loggedinuser[0].location}
-                    </p>
-                  )}
-                  {loggedinuser[0]?.website && (
-                    <p className="subInfo link">
-                      <AddLinkIcon /> {loggedinuser[0].website}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <h4 className="tweetsText">Tweets</h4>
-              <hr />
-            </div>
-            {post.map((p) => (
-              <Post p={p} />
-            ))}
+      <div className="coverImageContainer">
+        <img
+          src={profileUser.coverImage || "/default-cover.jpg"}
+          alt="cover"
+          className="coverImage"
+        />
+        {isOwnProfile && (
+          <div className="hoverCoverImage">
+            <label htmlFor="cover-upload">
+              {isLoading ? <LockResetIcon /> : <CenterFocusWeakIcon />}
+            </label>
+            <input
+              type="file"
+              id="cover-upload"
+              style={{ display: "none" }}
+              onChange={(e) => handleUploadImage(e, "cover")}
+            />
           </div>
+        )}
+      </div>
+
+      <div className="avatar-img">
+        <div className="avatarContainer" ref={avatarRef}>
+          {isLoading ? (
+            <div className="spinner" />
+          ) : (
+            <img
+              src={profileUser.profileImage || "/default-avatar.jpg"}
+              alt="avatar"
+              className="avatar"
+              onClick={() => isOwnProfile && setShowAvatarPicker(true)}
+            />
+          )}
+
+          {showAvatarPicker && (
+            <div className="avatarPickerModal">
+              <label htmlFor="upload-avatar" className="upload-label">Upload from device:</label>
+              <input
+                type="file"
+                id="upload-avatar"
+                accept="image/*"
+                style={{ display: "block", marginTop: "8px" }}
+                onChange={(e) => handleUploadImage(e, "profile")}
+              />
+              <p>Or pick from avatars:</p>
+              <div className="avatarGrid">
+                {avatarList.map((avatar, i) => (
+                  <img
+                    key={i}
+                    src={avatar}
+                    alt={`avatar-${i}`}
+                    className="avatarOption"
+                    onClick={() => handleAvatarSelect(avatar)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        <div className="userInfo">
+          <h3>{profileUser.name}</h3>
+
+          <div className="username-and-button">
+            <p>@{profileUser.username}</p>
+            <div className="profile-action-button">
+              {isOwnProfile ? (
+                <Editprofile user={user} loggedinuser={[profileUser]} />
+              ) : (
+                <FollowButton
+                  profileUserEmail={profileUser.email}
+                  loggedInUserEmail={loggedinuser[0]?.email}
+                />
+              )}
+            </div>
+          </div>
+
+          <p>{profileUser.bio}</p>
+
+          {profileUser.location && (
+            <p>
+              <MyLocationIcon fontSize="small" /> {profileUser.location}
+            </p>
+          )}
+          {profileUser.website && (
+            <p>
+              <AddLinkIcon fontSize="small" />{" "}
+              <a href={profileUser.website} target="_blank" rel="noreferrer">
+                {profileUser.website}
+              </a>
+            </p>
+          )}
+        </div>
+
+        <div className="profile-stats">
+          <span>{profileUser.followers?.length || 0} Followers</span>
+          <span>{profileUser.following?.length || 0} Following</span>
+        </div>
+      </div>
+
+      <div className="posts-section">
+        <h4>Tweets</h4>
+        <hr />
+
+        {posts.map((p) => (
+          <Post key={p._id || p.id} p={p} />
+        ))}
+
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { Outlet } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useUserAuth } from "../context/UserAuthContext";
 const Home = () => {
-  const {logOut,user}=useUserAuth()
+  const { logOut, user } = useUserAuth()
   const navigate = useNavigate();
   // const user = {
   //   displayName: "bithead",
@@ -21,8 +21,8 @@ const Home = () => {
   };
   return (
     <div className="app">
-      <Sidebar handlelogout={handlelogout} user={user} />
-      <Outlet />
+      <Sidebar handlelogout={handlelogout} user={user} />      {/*passing handlelogout as props to use latter */}
+      <Outlet />  
       <Widgets />
     </div>
   );

@@ -1,19 +1,30 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useUserAuth } from "../context/UserAuthContext";
+
 const useLoggedinuser = () => {
   const { user } = useUserAuth();
-  const email = user?.email;
-  const [loggedinuser, setloggedinuser] = useState({});
+  const [loggedinuser, setLoggedinuser] = useState([]);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/loggedinuser?email=${email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // console.log(data)
-        setloggedinuser(data);
-      });
-  }, [email, loggedinuser]);
-  return [loggedinuser, setloggedinuser];
+    const fetchLoggedInUser = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/loggedinuser?email=${user?.email}`);
+        const data = await res.json();
+        setLoggedinuser(data);
+      } catch (err) {
+        console.error("Failed to load user", err);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    if (user?.email) {
+      fetchLoggedInUser();
+    }
+  }, [user?.email]);
+
+  return [loggedinuser, loadingUser];
 };
 
 export default useLoggedinuser;

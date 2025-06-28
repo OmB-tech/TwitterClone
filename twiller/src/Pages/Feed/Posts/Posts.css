@@ -9,6 +9,11 @@
     flex: 1;
     padding: 10px;
   }
+  .profile-link {
+  text-decoration: none;
+  color: inherit;
+}
+
   
   .post__body>img {
     border-radius: 20px;

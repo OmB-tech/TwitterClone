@@ -15,9 +15,11 @@
 .coverImageContainer {
   position: relative;
 }
-.upload-label{
-    font-weight: bold;
+
+.upload-label {
+  font-weight: bold;
 }
+
 .hoverCoverImage {
   position: absolute;
   top: 0%;
@@ -45,16 +47,16 @@
 .photoIcon:hover {
   opacity: 100%;
 }
-
+.posts-section h4{
+  padding-left: 1rem;
+}
 .photoIconDisabled {
   cursor: not-allowed;
 }
 
 .userInfo {
-  margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+margin-left: 1rem;
+
 }
 
 .heading-4 {
@@ -84,7 +86,13 @@
 .profile-bio {
   height: 100px;
 }
-
+.profile-stats{
+  margin-left: 1rem ;
+  display: flex;
+  justify-content: start;
+  gap: 1rem;
+  /* border: 1px solid; */
+}
 .avatarContainer {
   margin-top: -80px;
   margin-left: 20px;
@@ -179,6 +187,16 @@
   width: 350%;
   top: 100%;
   left: 0;
+}
+
+.username-and-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.username-and-button p {
+  margin: 0;
 }
 
 .avatarPickerTitle {

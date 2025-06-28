@@ -18,14 +18,25 @@ const Signup = () => {
 
   const handlesubmit = async (e) => {
     e.preventDefault();
-    seterror("http://localhost:5000/register");
+    // seterror("http://localhost:5000/register");
     try {
-      await signUp(email, password);
+      await signUp(email, password);  //using firebase
+      // const user = {
+      //   username: username,
+      //   name: name,
+      //   email: email,
+      // };
+
       const user = {
-        username: username,
-        name: name,
-        email: email,
+        username,
+        name,
+        email,
+        followers: [],
+        following: [],
+        followerCount: 0,
+        followingCount: 0,
       };
+
       fetch("http://localhost:5000/register", {
         method: "POST",
         headers: {
@@ -50,11 +61,21 @@ const Signup = () => {
     try {
       await googleSignIn();
       navigate("/");
+      // const user = {
+      //   username: username,
+      //   name: name,
+      //   email: email,
+      // };
       const user = {
-        username: username,
-        name: name,
-        email: email,
+        username,
+        name,
+        email,
+        followers: [],
+        following: [],
+        followerCount: 0,
+        followingCount: 0,
       };
+
       fetch("http://localhost:5000/register", {
         method: "POST",
         headers: {

@@ -1,4 +1,4 @@
-import logo from "./logo.svg";
+
 import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import Home from "./Pages/Home";
@@ -13,6 +13,7 @@ import Lists from "./Pages/Lists/Lists";
 import Profile from "./Pages/Profile/Profile";
 import More from "./Pages/more/More";
 import { UserAuthContextProvider } from "./context/UserAuthContext";
+import Mainprofile from "./Pages/Profile/Mainprofile/Mainprofile";
 import Bookmark from "./Pages/Bookmark/Bookmark";
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
             <Route path="bookmarks" element={<Bookmark />} />
             <Route path="profile" element={<Profile />} />
             <Route path="more" element={<More />} />
+            <Route path="profile/:username" element={<Mainprofile />} />
           </Route>
         </Routes>
       </UserAuthContextProvider>

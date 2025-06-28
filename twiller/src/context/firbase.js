@@ -1,7 +1,11 @@
-
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from "firebase/auth";
 
+// Firebase configuration using environment variables
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -13,5 +17,26 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export default app
+const auth = getAuth(app);
+
+// Optional signup utility
+function signUp(email, password, username) {
+  return createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Send additional user data to your backend
+      fetch('http://localhost:5000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username })
+      });
+      return userCredential;
+    });
+}
+
+export {
+  app,
+  auth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signUp
+};
