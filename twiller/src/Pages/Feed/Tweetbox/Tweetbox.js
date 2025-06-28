@@ -59,7 +59,7 @@ const Tweetbox = () => {
       timestamp: new Date().toISOString(),
     };
 
-    fetch("http://localhost:5000/post", {
+    fetch("http://localhost:5000/createpost", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -68,10 +68,13 @@ const Tweetbox = () => {
     })
       .then(async (res) => {
         const data = await res.json();
+
         if (!res.ok) {
+          // ⚠️ Show toast with message from backend
           toast.error(data.message || "Post failed!");
           return;
         }
+
         toast.success("Tweet posted!");
         setPost("");
         setImageurl("");
@@ -81,6 +84,7 @@ const Tweetbox = () => {
         toast.error("Something went wrong!");
       });
   };
+
 
   return (
     <div className="tweetBox">

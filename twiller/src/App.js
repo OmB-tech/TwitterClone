@@ -15,6 +15,7 @@ import More from "./Pages/more/More";
 import { UserAuthContextProvider } from "./context/UserAuthContext";
 import Mainprofile from "./Pages/Profile/Mainprofile/Mainprofile";
 import Bookmark from "./Pages/Bookmark/Bookmark";
+import { Toaster } from 'react-hot-toast';
 function App() {
   return (
     <div className="app">
@@ -55,6 +56,7 @@ function App() {
           </Route>
         </Routes>
       </UserAuthContextProvider>
+      <Toaster position="top-center" />
     </div>
   );
 }

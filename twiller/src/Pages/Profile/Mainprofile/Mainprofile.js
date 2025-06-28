@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editprofile from "../Editprofile/Editprofile";
 import FollowButton from "./FollowButton";
@@ -9,8 +9,6 @@ import "./Mainprofile.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CenterFocusWeakIcon from "@mui/icons-material/CenterFocusWeak";
 import LockResetIcon from "@mui/icons-material/LockReset";
-import MyLocationIcon from "@mui/icons-material/MyLocation";
-import AddLinkIcon from "@mui/icons-material/AddLink";
 import Post from "../Posts/posts"
 const Mainprofile = () => {
   const { username: routeUsername } = useParams();
@@ -140,7 +138,7 @@ const Mainprofile = () => {
 
       <div className="coverImageContainer">
         <img
-          src={profileUser.coverImage || "/default-cover.jpg"}
+          src={profileUser.coverImage || "https://i.ibb.co/6JV5vNdF/banner-full-blue-scratch-jpg-twimg-1280.jpg"}
           alt="cover"
           className="coverImage"
         />
@@ -165,7 +163,7 @@ const Mainprofile = () => {
             <div className="spinner" />
           ) : (
             <img
-              src={profileUser.profileImage || "/default-avatar.jpg"}
+              src={profileUser.profileImage || "https://i.ibb.co/HsC1vhf/e.png"}
               alt="avatar"
               className="avatar"
               onClick={() => isOwnProfile && setShowAvatarPicker(true)}
@@ -196,46 +194,28 @@ const Mainprofile = () => {
               </div>
             </div>
           )}
+          <div className="edit">
+            {isOwnProfile ? (
+              <Editprofile user={user} loggedinuser={[profileUser]} />
+            ) : (
+              <FollowButton
+                profileUserEmail={profileUser.email}
+                loggedInUserEmail={loggedinuser[0]?.email}
+              />
+            )}</div>
         </div>
-
-        <div className="userInfo">
-          <h3>{profileUser.name}</h3>
-
-          <div className="username-and-button">
-            <p>@{profileUser.username}</p>
-            <div className="profile-action-button">
-              {isOwnProfile ? (
-                <Editprofile user={user} loggedinuser={[profileUser]} />
-              ) : (
-                <FollowButton
-                  profileUserEmail={profileUser.email}
-                  loggedInUserEmail={loggedinuser[0]?.email}
-                />
-              )}
-            </div>
-          </div>
-
+      </div>
+      <div className="userInfo">
+        <h3>{profileUser.name}</h3>
+        <div className="username-and-button">
+          <p>@{profileUser.username}</p>
           <p>{profileUser.bio}</p>
-
-          {profileUser.location && (
-            <p>
-              <MyLocationIcon fontSize="small" /> {profileUser.location}
-            </p>
-          )}
-          {profileUser.website && (
-            <p>
-              <AddLinkIcon fontSize="small" />{" "}
-              <a href={profileUser.website} target="_blank" rel="noreferrer">
-                {profileUser.website}
-              </a>
-            </p>
-          )}
         </div>
+      </div>
 
-        <div className="profile-stats">
-          <span>{profileUser.followers?.length || 0} Followers</span>
-          <span>{profileUser.following?.length || 0} Following</span>
-        </div>
+      <div className="profile-stats">
+        <span><strong>{profileUser.followers?.length || 0}</strong>   <span>Followers </span></span>
+        <span><strong>{profileUser.following?.length || 0}</strong>   <span>Following </span></span>
       </div>
 
       <div className="posts-section">

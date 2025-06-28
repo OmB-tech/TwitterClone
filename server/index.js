@@ -135,62 +135,81 @@ async function run() {
       }
     });
 
-    // Create post with time + follower restrictions
+        // Create post with time + follower restrictions
     app.post("/createpost", async (req, res) => {
       try {
-        const { email, content } = req.body;
+        const { email, name, username, profilephoto, post, photo, timestamp } = req.body;
+
+        if (!email || !post) {
+          return res.status(400).json({ message: "Email and post content are required." });
+        }
 
         const user = await userCollection.findOne({ email });
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const followerCount = user.followers?.length || 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
+        // Get today's date in IST
+        const now = new Date();
+        const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const todayStartIST = new Date(istNow);
+        todayStartIST.setHours(0, 0, 0, 0);
+
+        // Count posts made today
         const todayPosts = await postCollection.countDocuments({
           email,
-          createdAt: { $gte: today },
+          createdAt: { $gte: todayStartIST },
         });
 
         if (followerCount === 0) {
-          const now = new Date();
-          const hours = now.getHours();
-          const minutes = now.getMinutes();
+          const hours = istNow.getHours();
+          const minutes = istNow.getMinutes();
 
           if (!(hours === 10 && minutes >= 0 && minutes <= 30)) {
             return res.status(403).json({
-              message: "You can only post between 10:00 AM to 10:30 AM IST when you have no followers",
+              message: "Since you don't follow anyone, you can post only between 10:00–10:30 AM IST.",
             });
           }
 
           if (todayPosts >= 1) {
             return res.status(403).json({
-              message: "You can only post once per day when you have no followers",
+              message: "You can post only once per day when you have no followers.",
             });
           }
-        } else {
-          if (todayPosts >= followerCount) {
+        } else if (followerCount <= 2) {
+          if (todayPosts >= 2) {
             return res.status(403).json({
-              message: `Post limit reached. You can post only ${followerCount} time(s) per day.`,
+              message: "You can post only 2 times per day if you follow up to 2 people.",
             });
           }
-        }
+        } else if (followerCount <= 10) {
+          if (todayPosts >= 1) {
+            return res.status(403).json({
+              message: "You can post only once per day if you follow 3–10 people.",
+            });
+          }
+        } // else >10 followers → unlimited
 
-        const newPost = { ...req.body, createdAt: new Date() };
+        // Save the post
+        const newPost = {
+          email,
+          name,
+          username,
+          profilephoto,
+          post,
+          photo,
+          timestamp,
+          createdAt: new Date(),
+        };
+
         const result = await postCollection.insertOne(newPost);
-        res.status(201).json(result);
+        res.status(201).json({ success: true, postId: result.insertedId });
       } catch (error) {
         console.error("Error in /createpost:", error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: "Server error" });
       }
     });
 
-    // Create post (without restriction)
-    app.post("/post", async (req, res) => {
-      const post = req.body;
-      const result = await postCollection.insertOne({ ...post, createdAt: new Date() });
-      res.send(result);
-    });
 
     // Get all posts
     app.get("/post", async (req, res) => {

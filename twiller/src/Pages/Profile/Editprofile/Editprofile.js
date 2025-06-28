@@ -84,7 +84,7 @@ const Editprofile = ({ user, loggedinuser }) => {
 
   return (
     <>
-      <button onClick={() => setopen(true)} className="Edit-profile-btn">
+      <button onClick={() => setopen(true)} className="edit-profile-btn">
         Edit profile
       </button>
       <Modal open={open}>
