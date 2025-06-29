@@ -9,12 +9,11 @@ const serviceAccount = require("./serviceAccountKey.json");
 const app = express();
 const port = 5000;
 
-// Initialize Firebase Admin SDK
+// Firebase Admin init
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// Nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -31,7 +30,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// MongoDB setup
 const uri = process.env.MONGO_URI;
 const client = new MongoClient(uri, {
   serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true }
@@ -40,7 +38,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    console.log("Connected to MongoDB Atlas");
+    console.log("✅ Connected to MongoDB Atlas");
 
     const db = client.db("twiller");
     const userCollection = db.collection("users");
@@ -59,7 +57,6 @@ async function run() {
         followers: [],
         following: []
       };
-
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
@@ -72,14 +69,10 @@ async function run() {
 
     app.get("/users", async (req, res) => {
       const { username, email } = req.query;
-
       try {
         let user;
-        if (username) {
-          user = await userCollection.findOne({ username });
-        } else if (email) {
-          user = await userCollection.findOne({ email });
-        }
+        if (username) user = await userCollection.findOne({ username });
+        else if (email) user = await userCollection.findOne({ email });
 
         if (!user) return res.status(404).json([]);
 
@@ -96,7 +89,6 @@ async function run() {
           followers: user.followers || [],
           following: user.following || []
         };
-
         res.json([publicProfile]);
       } catch (error) {
         console.error("Error in /users route:", error);
@@ -104,23 +96,19 @@ async function run() {
       }
     });
 
+    //FOLLOW / UNFOLLOW
     app.patch("/follow", async (req, res) => {
       const { followerEmail, followeeEmail } = req.body;
-
-      if (followerEmail === followeeEmail) {
+      if (followerEmail === followeeEmail)
         return res.status(400).json({ error: "Cannot follow yourself" });
-      }
 
       try {
         const follower = await userCollection.findOne({ email: followerEmail });
         const followee = await userCollection.findOne({ email: followeeEmail });
-
-        if (!follower || !followee) {
+        if (!follower || !followee)
           return res.status(404).json({ error: "User not found" });
-        }
 
         const isFollowing = follower.following?.includes(followeeEmail);
-
         if (isFollowing) {
           await userCollection.updateOne({ email: followerEmail }, { $pull: { following: followeeEmail } });
           await userCollection.updateOne({ email: followeeEmail }, { $pull: { followers: followerEmail } });
@@ -130,73 +118,51 @@ async function run() {
         }
 
         const updatedFollowee = await userCollection.findOne({ email: followeeEmail });
-
-        res.json({
-          success: true,
-          isFollowing: !isFollowing,
-          followerCount: updatedFollowee.followers.length
-        });
+        res.json({ success: true, isFollowing: !isFollowing, followerCount: updatedFollowee.followers.length });
       } catch (error) {
         console.error("Error in /follow:", error);
         res.status(500).json({ error: "Server error" });
       }
     });
 
+    //CREATE POST (with daily limit)
     app.post("/createpost", async (req, res) => {
       try {
         const { email, name, username, profilephoto, post, photo, timestamp } = req.body;
-
-        if (!email || !post) {
-          return res.status(400).json({ message: "Email and post content are required." });
-        }
+        if (!email || !post)
+          return res.status(400).json({ message: "Email and post content required." });
 
         const user = await userCollection.findOne({ email });
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const followerCount = user.followers?.length || 0;
+        const followingCount = user.following?.length || 0;
 
         const now = new Date();
         const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const todayStartIST = new Date(istNow);
         todayStartIST.setHours(0, 0, 0, 0);
 
-        const todayPosts = await postCollection.countDocuments({
-          email,
-          createdAt: { $gte: todayStartIST }
-        });
+        const todayPosts = await postCollection.countDocuments({ email, createdAt: { $gte: todayStartIST } });
 
-        if (followerCount === 0) {
+        if (followingCount  === 0) {
           const hours = istNow.getHours();
           const minutes = istNow.getMinutes();
-
-          if (!(hours === 10 && minutes >= 0 && minutes <= 30)) {
+          if (!(hours === 10 && minutes >= 0 && minutes <= 30))
             return res.status(403).json({ message: "Since you don't follow anyone, you can post only between 10:00–10:30 AM IST." });
-          }
-
-          if (todayPosts >= 1) {
+          if (todayPosts >= 1)
             return res.status(403).json({ message: "You can post only once per day when you have no followers." });
-          }
-        } else if (followerCount <= 2) {
-          if (todayPosts >= 2) {
+        } else if (followingCount  <= 2) {
+          if (todayPosts >= 2)
             return res.status(403).json({ message: "You can post only 2 times per day if you follow up to 2 people." });
-          }
-        } else if (followerCount <= 10) {
-          if (todayPosts >= 1) {
+        } else if (followingCount  <= 10) {
+          if (todayPosts >= 1)
             return res.status(403).json({ message: "You can post only once per day if you follow 3–10 people." });
-          }
         }
 
         const newPost = {
-          email,
-          name,
-          username,
-          profilephoto,
-          post,
-          photo,
-          timestamp,
+          email, name, username, profilephoto, post, photo, timestamp,
           createdAt: new Date()
         };
-
         const result = await postCollection.insertOne(newPost);
         res.status(201).json({ success: true, postId: result.insertedId });
       } catch (error) {
@@ -216,30 +182,31 @@ async function run() {
       res.send(posts);
     });
 
-    app.get("/user", async (req, res) => {
-      const users = await userCollection.find().toArray();
-      res.send(users);
-    });
-
     app.patch("/userupdate/:email", async (req, res) => {
       const filter = { email: req.params.email };
       const updateDoc = { $set: req.body };
       const options = { upsert: true };
-
       const result = await userCollection.updateOne(filter, updateDoc, options);
       res.send(result);
     });
 
-    // Forgot password route that updates Firebase Auth password
     app.post("/forgot-password", async (req, res) => {
       const { email } = req.body;
       if (!email) return res.status(400).json({ message: "Email is required" });
 
       try {
         const userRecord = await admin.auth().getUserByEmail(email);
-        const newPassword = generatePassword(10);
+        const user = await userCollection.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found in database" });
 
+        const now = new Date();
+        if (user.lastForgotRequest && now.toDateString() === new Date(user.lastForgotRequest).toDateString()) {
+          return res.status(429).json({ message: "You can request password reset only once a day" });
+        }
+
+        const newPassword = generatePassword(10);
         await admin.auth().updateUser(userRecord.uid, { password: newPassword });
+        await userCollection.updateOne({ email }, { $set: { lastForgotRequest: now } });
 
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
@@ -263,6 +230,7 @@ async function run() {
       }
       return password;
     }
+
   } catch (error) {
     console.error("MongoDB error:", error);
   }
@@ -271,9 +239,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Twiller backend is running");
+  res.send("✅ Twiller backend is running");
 });
 
 app.listen(port, () => {
-  console.log(`✅Twiller backend is running at http://localhost:${port}`);
+  console.log(`🚀 Twiller backend running at http://localhost:${port}`);
 });
