@@ -1,39 +1,51 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
+const nodemailer = require("nodemailer");
+const admin = require("firebase-admin");
+const serviceAccount = require("./serviceAccountKey.json");
+
 const app = express();
 const port = 5000;
+
+// Initialize Firebase Admin SDK
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+// Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // Middleware
 app.use(cors({
   origin: "http://localhost:3000",
   methods: ["GET", "POST", "PATCH", "DELETE"],
-  credentials: true,
+  credentials: true
 }));
 app.use(express.json());
 
-// MongoDB URI
+// MongoDB setup
 const uri = process.env.MONGO_URI;
-
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+  serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true }
 });
 
 async function run() {
   try {
     await client.connect();
-    console.log("✅ Connected to MongoDB Atlas");
+    console.log("Connected to MongoDB Atlas");
 
     const db = client.db("twiller");
-    const postCollection = db.collection("posts");
     const userCollection = db.collection("users");
+    const postCollection = db.collection("posts");
 
-    // Register user
     app.post("/register", async (req, res) => {
       const user = {
         name: req.body.name || "",
@@ -48,21 +60,17 @@ async function run() {
         following: []
       };
 
-      console.log("📥 Register request:", user);
       const result = await userCollection.insertOne(user);
-      console.log("✅ User inserted:", result.insertedId);
       res.send(result);
     });
 
-
-    // Get logged-in user
     app.get("/loggedinuser", async (req, res) => {
       const email = req.query.email;
       const user = await userCollection.find({ email }).toArray();
       res.send(user);
     });
 
-    app.get('/users', async (req, res) => {
+    app.get("/users", async (req, res) => {
       const { username, email } = req.query;
 
       try {
@@ -86,18 +94,17 @@ async function run() {
           profileImage: user.profileImage,
           coverImage: user.coverImage,
           followers: user.followers || [],
-          following: user.following || [],
+          following: user.following || []
         };
 
         res.json([publicProfile]);
       } catch (error) {
-        console.error("🔥 Error in /users route:", error);
-        res.status(500).json({ error: 'Server error' });
+        console.error("Error in /users route:", error);
+        res.status(500).json({ error: "Server error" });
       }
     });
 
-    // Follow / Unfollow logic
-    app.patch('/follow', async (req, res) => {
+    app.patch("/follow", async (req, res) => {
       const { followerEmail, followeeEmail } = req.body;
 
       if (followerEmail === followeeEmail) {
@@ -127,7 +134,7 @@ async function run() {
         res.json({
           success: true,
           isFollowing: !isFollowing,
-          followerCount: updatedFollowee.followers.length,
+          followerCount: updatedFollowee.followers.length
         });
       } catch (error) {
         console.error("Error in /follow:", error);
@@ -135,7 +142,6 @@ async function run() {
       }
     });
 
-        // Create post with time + follower restrictions
     app.post("/createpost", async (req, res) => {
       try {
         const { email, name, username, profilephoto, post, photo, timestamp } = req.body;
@@ -149,16 +155,14 @@ async function run() {
 
         const followerCount = user.followers?.length || 0;
 
-        // Get today's date in IST
         const now = new Date();
         const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const todayStartIST = new Date(istNow);
         todayStartIST.setHours(0, 0, 0, 0);
 
-        // Count posts made today
         const todayPosts = await postCollection.countDocuments({
           email,
-          createdAt: { $gte: todayStartIST },
+          createdAt: { $gte: todayStartIST }
         });
 
         if (followerCount === 0) {
@@ -166,31 +170,22 @@ async function run() {
           const minutes = istNow.getMinutes();
 
           if (!(hours === 10 && minutes >= 0 && minutes <= 30)) {
-            return res.status(403).json({
-              message: "Since you don't follow anyone, you can post only between 10:00–10:30 AM IST.",
-            });
+            return res.status(403).json({ message: "Since you don't follow anyone, you can post only between 10:00–10:30 AM IST." });
           }
 
           if (todayPosts >= 1) {
-            return res.status(403).json({
-              message: "You can post only once per day when you have no followers.",
-            });
+            return res.status(403).json({ message: "You can post only once per day when you have no followers." });
           }
         } else if (followerCount <= 2) {
           if (todayPosts >= 2) {
-            return res.status(403).json({
-              message: "You can post only 2 times per day if you follow up to 2 people.",
-            });
+            return res.status(403).json({ message: "You can post only 2 times per day if you follow up to 2 people." });
           }
         } else if (followerCount <= 10) {
           if (todayPosts >= 1) {
-            return res.status(403).json({
-              message: "You can post only once per day if you follow 3–10 people.",
-            });
+            return res.status(403).json({ message: "You can post only once per day if you follow 3–10 people." });
           }
-        } // else >10 followers → unlimited
+        }
 
-        // Save the post
         const newPost = {
           email,
           name,
@@ -199,7 +194,7 @@ async function run() {
           post,
           photo,
           timestamp,
-          createdAt: new Date(),
+          createdAt: new Date()
         };
 
         const result = await postCollection.insertOne(newPost);
@@ -210,27 +205,22 @@ async function run() {
       }
     });
 
-
-    // Get all posts
     app.get("/post", async (req, res) => {
       const posts = (await postCollection.find().toArray()).reverse();
       res.send(posts);
     });
 
-    // Get posts by email
     app.get("/userpost", async (req, res) => {
       const email = req.query.email;
       const posts = (await postCollection.find({ email }).toArray()).reverse();
       res.send(posts);
     });
 
-    // Get all users
     app.get("/user", async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
 
-    // Update user profile
     app.patch("/userupdate/:email", async (req, res) => {
       const filter = { email: req.params.email };
       const updateDoc = { $set: req.body };
@@ -239,6 +229,40 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc, options);
       res.send(result);
     });
+
+    // Forgot password route that updates Firebase Auth password
+    app.post("/forgot-password", async (req, res) => {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+
+      try {
+        const userRecord = await admin.auth().getUserByEmail(email);
+        const newPassword = generatePassword(10);
+
+        await admin.auth().updateUser(userRecord.uid, { password: newPassword });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Your new Twiller password",
+          text: `Hey! Your new password is: ${newPassword}`
+        });
+
+        res.json({ success: true, message: "New password set and sent to email" });
+      } catch (err) {
+        console.error("Error in forgot-password:", err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    function generatePassword(length = 10) {
+      const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let password = "";
+      for (let i = 0; i < length; i++) {
+        password += letters.charAt(Math.floor(Math.random() * letters.length));
+      }
+      return password;
+    }
   } catch (error) {
     console.error("MongoDB error:", error);
   }
@@ -246,12 +270,10 @@ async function run() {
 
 run().catch(console.dir);
 
-// Test route
 app.get("/", (req, res) => {
-  res.send("✅ Twiller backend is running");
+  res.send("Twiller backend is running");
 });
 
-// Start server
 app.listen(port, () => {
-  console.log(`🚀 Twiller backend is running at http://localhost:${port}`);
+  console.log(`✅Twiller backend is running at http://localhost:${port}`);
 });

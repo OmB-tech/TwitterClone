@@ -16,6 +16,7 @@ import { UserAuthContextProvider } from "./context/UserAuthContext";
 import Mainprofile from "./Pages/Profile/Mainprofile/Mainprofile";
 import Bookmark from "./Pages/Bookmark/Bookmark";
 import { Toaster } from 'react-hot-toast';
+import ForgotPassword from "./Pages/Login/ForgotPassword";
 function App() {
   return (
     <div className="app">
@@ -43,6 +44,7 @@ function App() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/home" element={<Home />}>
             <Route path="feed" element={<Feed />} />
             <Route path="explore" element={<Explore />} />

@@ -1,4 +1,4 @@
-import React, { useState,useContext } from "react";
+import React, { useState, useContext } from "react";
 import twitterimg from "../../image/twitter.jpeg";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import GoogleButton from "react-google-button";
@@ -10,12 +10,12 @@ const Login = () => {
   const [password, setpassword] = useState("");
   const [error, seterror] = useState("");
   const navigate = useNavigate();
-  const { googleSignIn ,logIn} = useUserAuth();
+  const { googleSignIn, logIn } = useUserAuth();
   const handlesubmit = async (e) => {
     e.preventDefault();
     seterror("");
     try {
-      await logIn(email,password)
+      await logIn(email, password)
       navigate("/");
     } catch (error) {
       seterror(error.message);
@@ -55,6 +55,20 @@ const Login = () => {
                 placeholder="Password"
                 onChange={(e) => setpassword(e.target.value)}
               />
+              <div style={{ marginTop: "10px" }}>
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    textDecoration: "none",
+                    color: "var(--twitter-color)",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               <div className="btn-login">
                 <button type="submit" className="btn">
                   Log In
@@ -63,7 +77,7 @@ const Login = () => {
             </form>
             <hr />
             <div className="gog-btn">
-              <GoogleButton className="g-btn" type="light" onClick={hanglegooglesignin}/>
+              <GoogleButton className="g-btn" type="light" onClick={hanglegooglesignin} />
             </div>
           </div>
           <div>
