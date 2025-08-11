@@ -23,6 +23,26 @@
 .modal-content h2 {
     margin-top: 0;
     color: var(--twitter-color);
+    text-align: center;
+}
+
+/* NEW STYLE for the test info box */
+.test-info-box {
+    background-color: #f5f8fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.test-info-box p {
+    margin: 0 0 8px;
+}
+
+.test-info-box p:last-child {
+    margin-bottom: 0;
 }
 
 .lang-grid {
@@ -65,6 +85,7 @@
     border: 1px solid #ccd6dd;
     font-size: 16px;
     text-align: center;
+    box-sizing: border-box; /* Add this */
 }
 
 .otp-input:focus {

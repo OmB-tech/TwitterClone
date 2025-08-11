@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import './LanguageSwitcher.css';
@@ -13,9 +13,13 @@ const languages = [
     { code: 'zh', name: '中文', auth: 'phone' },
 ];
 
+// Test credentials for the UI
+const TEST_PHONE_NUMBER = "+911234567890";
+const TEST_OTP = "123456";
+
 const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
     const { i18n } = useTranslation();
-    const [step, setStep] = useState('SELECT_LANG'); // SELECT_LANG, VERIFY_PHONE, VERIFY_EMAIL
+    const [step, setStep] = useState('SELECT_LANG');
     const [selectedLang, setSelectedLang] = useState(null);
     const [otp, setOtp] = useState("");
     const [confirmationResult, setConfirmationResult] = useState(null);
@@ -23,15 +27,13 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
 
     useEffect(() => {
         if (step !== 'VERIFY_PHONE') return;
-        // Ensure the container is clean before rendering a new verifier
         const recaptchaContainer = document.getElementById('recaptcha-container');
         if (recaptchaContainer) recaptchaContainer.innerHTML = '';
         
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             'size': 'invisible',
-            'callback': () => {} // Intentionally empty
+            'callback': () => {}
         });
-        // Render the verifier immediately
         window.recaptchaVerifier.render();
     }, [step]);
 
@@ -40,7 +42,7 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
         if (lang.auth === 'email') {
             setIsLoading(true);
             try {
-                const res = await fetch('https://twitterclone-1-uvwk.onrender.com/send-email-otp', {
+                const res = await fetch('http://localhost:5000/send-email-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: user.email })
@@ -54,50 +56,27 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
             } finally {
                 setIsLoading(false);
             }
-        } else { // phone auth
-            if (!loggedinuser[0]?.phoneNumber) {
-                toast.error("Please add and verify your phone number in your profile first.");
-                return;
-            }
+        } else {
             setStep('VERIFY_PHONE');
-            setTimeout(sendPhoneOtp, 100);
-        }
-    };
-
-    const sendPhoneOtp = async () => {
-        setIsLoading(true);
-        try {
-            const phoneNumber = loggedinuser[0]?.phoneNumber;
-            const appVerifier = window.recaptchaVerifier;
-            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-            setConfirmationResult(confirmation);
-            toast.success('Verification code sent to your phone.');
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to send verification code. Refresh and try again.');
-            setStep('SELECT_LANG');
-        } finally {
-            setIsLoading(false);
+            // We don't send a real OTP here anymore, just switch to the view
+            // that shows the test credentials.
         }
     };
 
     const verifyPhoneOtp = async () => {
-        setIsLoading(true);
-        try {
-            await confirmationResult.confirm(otp);
+        // For the portfolio, we just check against the hardcoded test OTP
+        if (otp === TEST_OTP) {
             toast.success('Phone number verified!');
             changeLanguage(selectedLang.code);
-        } catch (error) {
+        } else {
             toast.error('Invalid verification code.');
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const verifyEmailOtp = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('https://twitterclone-1-uvwk.onrender.com/verify-email-otp', {
+            const res = await fetch('http://localhost:5000/verify-email-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: user.email, otp })
@@ -124,11 +103,16 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
             case 'VERIFY_PHONE':
                 return (
                     <div>
-                         <h2>Verify Phone</h2>
-                         <p>Enter the code sent to {loggedinuser[0]?.phoneNumber}</p>
+                         <h2>Phone Verification</h2>
+                         <div className="test-info-box">
+                            <p>We're sorry, our app can't send live SMS due to billing limitations.</p>
+                            <p>Please use these test credentials to proceed:</p>
+                            <p><strong>Phone Number:</strong> {TEST_PHONE_NUMBER}</p>
+                            <p><strong>Verification Code:</strong> {TEST_OTP}</p>
+                         </div>
                          <input type="text" className="otp-input" placeholder="6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} />
                          <button onClick={verifyPhoneOtp} disabled={isLoading || otp.length < 6} className="verify-btn">
-                            {isLoading ? 'Verifying...' : 'Verify & Switch'}
+                            Verify & Switch
                          </button>
                     </div>
                 );

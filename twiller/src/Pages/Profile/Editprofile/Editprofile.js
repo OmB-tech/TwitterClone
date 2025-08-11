@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Modal, IconButton, TextField, Button } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { toast } from "react-hot-toast";
@@ -18,7 +18,6 @@ const style = {
 };
 
 function Editchild({ dob, setdob }) {
-    // This component remains unchanged
     return (
         <div className="birthdate-section">
             <p>Birth Date</p>
@@ -37,14 +36,12 @@ const Editprofile = ({ user, loggedinuser }) => {
   const [dob, setdob] = useState(currentUser?.dob || "");
   const [phoneNumber, setPhoneNumber] = useState(currentUser?.phoneNumber || "");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState('EDIT_DETAILS'); // EDIT_DETAILS or VERIFY_OTP
+  const [step, setStep] = useState('EDIT_DETAILS');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [open, setopen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // This effect ensures the reCAPTCHA is ready but invisible
-    // It should only run once when the modal is about to open
     if (open && !window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 
             size: 'invisible',
@@ -60,13 +57,23 @@ const Editprofile = ({ user, loggedinuser }) => {
     }
     setIsLoading(true);
     try {
+      // SECURITY CHECK: See if number is already taken
+      const checkRes = await fetch('http://localhost:5000/check-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber, currentUserEmail: user?.email })
+      });
+      const checkData = await checkRes.json();
+      if (checkData.isTaken) {
+          throw new Error(checkData.message);
+      }
+      // If not taken, proceed with sending OTP
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
       setConfirmationResult(confirmation);
       setStep('VERIFY_OTP');
       toast.success("Verification code sent!");
     } catch (error) {
-      console.error(error);
-      toast.error(`Failed to send code: ${error.message}`);
+      toast.error(error.message || `Failed to send code.`);
     } finally {
         setIsLoading(false);
     }
@@ -75,25 +82,20 @@ const Editprofile = ({ user, loggedinuser }) => {
   const onOtpConfirm = async () => {
     setIsLoading(true);
     try {
-      // First, confirm the OTP with Firebase
       await confirmationResult.confirm(otp);
-      
-      // If successful, update the user's main Firebase Auth record
       const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
+      // Link the credential to the currently logged-in user
       await updatePhoneNumber(auth.currentUser, credential);
       
-      // Then, save the now-verified phone number to our database
-      await fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${user?.email}`, {
+      await fetch(`http://localhost:5000/userupdate/${user?.email}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: auth.currentUser.phoneNumber }),
       });
 
       toast.success("Phone number verified and updated!");
-      setStep('EDIT_DETAILS'); // Go back to the main edit view
-      // **THE FIX**: Force a reload to fetch the new user data everywhere
+      setStep('EDIT_DETAILS');
       window.location.reload(); 
     } catch (error) {
-      console.error(error);
       toast.error("Invalid verification code or failed to update.");
     } finally {
         setIsLoading(false);
@@ -102,14 +104,13 @@ const Editprofile = ({ user, loggedinuser }) => {
 
   const handlesave = () => {
     const editinfo = { name, bio, location, website, dob };
-    fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${user?.email}`, {
+    fetch(`http://localhost:5000/userupdate/${user?.email}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
       body: JSON.stringify(editinfo),
     })
       .then(res => res.json())
       .then(() => {
         toast.success("Profile updated successfully!");
-        // **THE FIX**: Force a reload to ensure all components have fresh data
         window.location.reload();
       });
   };

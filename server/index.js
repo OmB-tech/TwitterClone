@@ -29,6 +29,7 @@ app.use(cors({
   methods: ["GET", "POST", "PATCH", "DELETE"],
   credentials: true
 }));
+
 app.use(express.json());
 
 const uri = process.env.MONGO_URI;
@@ -44,6 +45,34 @@ async function run() {
     const userCollection = db.collection("users");
     const postCollection = db.collection("posts");
     const otpCollection = db.collection("otps");
+
+    // =================================================================
+    // NEW ENDPOINT FOR SECURITY
+    // This checks if a phone number is already in use before verification.
+    // =================================================================
+    app.post("/check-phone", async (req, res) => {
+        const { phoneNumber, currentUserEmail } = req.body;
+        if (!phoneNumber) {
+            return res.status(400).json({ message: "Phone number is required." });
+        }
+        try {
+            // Find if any *other* user already has this phone number
+            const existingUser = await userCollection.findOne({ 
+                phoneNumber: phoneNumber, 
+                email: { $ne: currentUserEmail } // $ne means "not equal"
+            });
+
+            if (existingUser) {
+                return res.status(409).json({ isTaken: true, message: "This phone number is already in use by another account." });
+            }
+            res.status(200).json({ isTaken: false });
+        } catch (error) {
+            res.status(500).json({ message: "Server error while checking phone number." });
+        }
+    });
+    // =================================================================
+
+    // ... (rest of your server code remains the same)
 
     const generatePassword = () => {
         const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -81,8 +110,6 @@ async function run() {
       } catch (error) { res.status(500).json({ error: "Server error" }); }
     });
     
-    // **THE FIX IS HERE**
-    // This endpoint can now find a user by username OR email.
     app.get("/users", async (req, res) => {
         const { username, email } = req.query;
         let query = {};
