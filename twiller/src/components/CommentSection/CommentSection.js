@@ -18,7 +18,7 @@ const CommentSection = ({ postId, comments = [], loggedinuser, onCommentPosted }
             text: newComment,
         };
         try {
-            const res = await fetch(`http://localhost:5000/posts/${postId}/comment`, {
+            const res = await fetch(`https://twitterclone-1-uvwk.onrender.com/posts/${postId}/comment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comment: commentPayload }),

@@ -16,7 +16,7 @@ export function UserAuthContextProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const syncUserProfile = async (firebaseUser) => {
-    return fetch("http://localhost:5000/register", {
+    return fetch("https://twitterclone-1-uvwk.onrender.com/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

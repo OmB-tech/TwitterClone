@@ -9,10 +9,10 @@ const Feed = () => {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:5000/post");
+      const res = await fetch("https://twitterclone-1-uvwk.onrender.com/post");
       const data = await res.json();
       const enhancedPosts = await Promise.all(data.map(async post => {
-        const userRes = await fetch(`http://localhost:5000/users?email=${post.email}`);
+        const userRes = await fetch(`https://twitterclone-1-uvwk.onrender.com/users?email=${post.email}`);
         const userData = await userRes.json();
         return { ...post, username: userData[0]?.username || post.email.split('@')[0] };
       }));

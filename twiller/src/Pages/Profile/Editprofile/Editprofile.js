@@ -83,7 +83,7 @@ const Editprofile = ({ user, loggedinuser }) => {
       await updatePhoneNumber(auth.currentUser, credential);
       
       // Then, save the now-verified phone number to our database
-      await fetch(`http://localhost:5000/userupdate/${user?.email}`, {
+      await fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${user?.email}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: auth.currentUser.phoneNumber }),
       });
@@ -102,7 +102,7 @@ const Editprofile = ({ user, loggedinuser }) => {
 
   const handlesave = () => {
     const editinfo = { name, bio, location, website, dob };
-    fetch(`http://localhost:5000/userupdate/${user?.email}`, {
+    fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${user?.email}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
       body: JSON.stringify(editinfo),
     })

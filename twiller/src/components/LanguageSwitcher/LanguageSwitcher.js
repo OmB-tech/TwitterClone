@@ -40,7 +40,7 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
         if (lang.auth === 'email') {
             setIsLoading(true);
             try {
-                const res = await fetch('http://localhost:5000/send-email-otp', {
+                const res = await fetch('https://twitterclone-1-uvwk.onrender.com/send-email-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: user.email })
@@ -97,7 +97,7 @@ const LanguageSwitcher = ({ user, loggedinuser, onClose }) => {
     const verifyEmailOtp = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/verify-email-otp', {
+            const res = await fetch('https://twitterclone-1-uvwk.onrender.com/verify-email-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: user.email, otp })

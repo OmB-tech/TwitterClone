@@ -59,7 +59,7 @@ const Tweetbox = ({ onPost }) => {
       photo: mediaUrl,
       email: user?.email,
     };
-    fetch("http://localhost:5000/createpost", {
+    fetch("https://twitterclone-1-uvwk.onrender.com/createpost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userpost),

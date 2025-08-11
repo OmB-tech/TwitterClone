@@ -4,7 +4,7 @@ const FollowButton = ({ profileUserEmail, loggedInUserEmail }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const BACKEND_URL = 'http://localhost:5000';
+  const BACKEND_URL = 'https://twitterclone-1-uvwk.onrender.com';
 
   useEffect(() => {
     if (!loggedInUserEmail) return;

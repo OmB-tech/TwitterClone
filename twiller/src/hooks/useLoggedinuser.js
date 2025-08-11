@@ -14,7 +14,7 @@ const useLoggedinuser = () => {
       }
       setLoadingUser(true);
       try {
-        const res = await fetch(`http://localhost:5000/loggedinuser?uid=${user.uid}`);
+        const res = await fetch(`https://twitterclone-1-uvwk.onrender.com/loggedinuser?uid=${user.uid}`);
         const data = await res.json();
         setLoggedinuser(data);
       } catch (err) {

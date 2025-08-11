@@ -20,7 +20,7 @@ const Signup = () => {
     seterror("");
     try {
       const result = await signUp(email, password);
-      await fetch("http://localhost:5000/register", {
+      await fetch("https://twitterclone-1-uvwk.onrender.com/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

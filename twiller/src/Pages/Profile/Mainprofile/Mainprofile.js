@@ -32,7 +32,7 @@ const Mainprofile = () => {
     if (!username) return;
     setLoading(true);
     try {
-      const userRes = await fetch(`http://localhost:5000/users?username=${username}`);
+      const userRes = await fetch(`https://twitterclone-1-uvwk.onrender.com/users?username=${username}`);
       const userData = await userRes.json();
 
       if (!userData || userData.length === 0) {
@@ -42,7 +42,7 @@ const Mainprofile = () => {
       const u = userData[0];
       setProfileUser(u);
 
-      const postsRes = await fetch(`http://localhost:5000/userpost?email=${u.email}`);
+      const postsRes = await fetch(`https://twitterclone-1-uvwk.onrender.com/userpost?email=${u.email}`);
       const postsData = await postsRes.json();
       postsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setPosts(postsData);
@@ -86,7 +86,7 @@ const Mainprofile = () => {
           ? { email: profileUser.email, coverImage: url }
           : { email: profileUser.email, profileImage: url };
 
-        fetch(`http://localhost:5000/userupdate/${profileUser.email}`, {
+        fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${profileUser.email}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload),
@@ -111,7 +111,7 @@ const Mainprofile = () => {
   const handleAvatarSelect = (avatarUrl) => {
     setIsLoading(true);
     const payload = { email: profileUser.email, profileImage: avatarUrl };
-    fetch(`http://localhost:5000/userupdate/${profileUser.email}`, {
+    fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${profileUser.email}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
