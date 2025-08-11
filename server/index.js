@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 app.use(cors({
   origin: [
     "http://localhost:3000",
-    "https://twitterclone-by-om.netlify.app"
+    "https://twitterclone-t.netlify.app"
   ],
   methods: ["GET", "POST", "PATCH", "DELETE"],
   credentials: true
