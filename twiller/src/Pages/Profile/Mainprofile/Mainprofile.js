@@ -1,15 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editprofile from "../Editprofile/Editprofile";
 import FollowButton from "./FollowButton";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import useLoggedinuser from "../../../hooks/useLoggedinuser";
 import { useUserAuth } from "../../../context/UserAuthContext";
 import "./Mainprofile.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CenterFocusWeakIcon from "@mui/icons-material/CenterFocusWeak";
 import LockResetIcon from "@mui/icons-material/LockReset";
-import Post from "../Posts/posts"
+import Post from "../Posts/posts";
+
 const Mainprofile = () => {
   const { username: routeUsername } = useParams();
   const navigate = useNavigate();
@@ -24,39 +26,36 @@ const Mainprofile = () => {
   const avatarRef = useRef();
 
   const username = routeUsername || loggedinuser[0]?.username;
-
   const isOwnProfile = loggedinuser[0]?.email === profileUser?.email;
 
-  useEffect(() => {
+  const fetchUserAndPosts = useCallback(async () => {
     if (!username) return;
+    setLoading(true);
+    try {
+      const userRes = await fetch(`http://localhost:5000/users?username=${username}`);
+      const userData = await userRes.json();
 
-    const fetchUserAndPosts = async () => {
-      setLoading(true);
-      try {
-        const userRes = await fetch(`http://localhost:5000/users?username=${username}`);
-        const userData = await userRes.json();
-
-        if (!userData || userData.length === 0) {
-          setProfileUser(null);
-          return;
-        }
-
-        const u = userData[0];
-        setProfileUser(u);
-
-        const postsRes = await fetch(`http://localhost:5000/userpost?email=${u.email}`);
-        const postsData = await postsRes.json();
-        postsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setPosts(postsData);
-      } catch (err) {
-        console.error("Error fetching user/posts:", err);
-      } finally {
-        setLoading(false);
+      if (!userData || userData.length === 0) {
+        setProfileUser(null);
+        return;
       }
-    };
+      const u = userData[0];
+      setProfileUser(u);
 
-    fetchUserAndPosts();
+      const postsRes = await fetch(`http://localhost:5000/userpost?email=${u.email}`);
+      const postsData = await postsRes.json();
+      postsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setPosts(postsData);
+    } catch (err) {
+      console.error("Error fetching user/posts:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [username]);
+
+  useEffect(() => {
+    fetchUserAndPosts();
+  }, [fetchUserAndPosts]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -104,7 +103,7 @@ const Mainprofile = () => {
       })
       .catch((err) => {
         console.error(err);
-        window.alert("Image upload failed");
+        toast.error("Image upload failed. Please try again.");
         setIsLoading(false);
       });
   };
@@ -223,7 +222,7 @@ const Mainprofile = () => {
         <hr />
 
         {posts.map((p) => (
-          <Post key={p._id || p.id} p={p} />
+          <Post key={p._id || p.id} p={p} onPostUpdate={fetchUserAndPosts} />
         ))}
 
       </div>

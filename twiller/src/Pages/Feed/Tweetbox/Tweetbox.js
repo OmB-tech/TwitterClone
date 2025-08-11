@@ -2,127 +2,102 @@ import { useState } from "react";
 import "./Tweetbox.css";
 import { Avatar, Button } from "@mui/material";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
-import axios from "axios";
 import { useUserAuth } from "../../../context/UserAuthContext";
 import { toast } from "react-hot-toast";
 import useLoggedinuser from "../../../hooks/useLoggedinuser";
 
-const Tweetbox = () => {
-  const [post, setPost] = useState("");
-  const [imageurl, setImageurl] = useState("");
-  const [isloading, setIsLoading] = useState(false);
+const CLOUDINARY_CLOUD_NAME = "dhvjlxlei";
+const CLOUDINARY_UPLOAD_PRESET = "twiller_unsigned";
 
+const Tweetbox = ({ onPost }) => {
+  const [post, setPost] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isTweeting, setIsTweeting] = useState(false);
   const { user } = useUserAuth();
   const [loggedinuser] = useLoggedinuser();
 
-  const email = user?.email;
-  const userProfilePic =
-    loggedinuser[0]?.profileImage || user?.photoURL;
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleUploadImage = (e) => {
     setIsLoading(true);
-    const image = e.target.files[0];
     const formData = new FormData();
-    formData.set("image", image);
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-    axios
-      .post(
-        "https://api.imgbb.com/1/upload?key=daa2ac1a5d20ec3d601828e4bf73164e",
-        formData
-      )
-      .then((res) => {
-        setImageurl(res.data.data.display_url);
-        setIsLoading(false);
-      })
-      .catch((e) => {
-        console.log(e);
-        toast.error("Image upload failed!");
-        setIsLoading(false);
+    const fileType = file.type.startsWith("image/") ? "image" : "video";
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${fileType}/upload`, {
+        method: "POST",
+        body: formData,
       });
+      const data = await res.json();
+      setMediaUrl(data.secure_url);
+      toast.success("File uploaded!");
+    } catch (err) {
+      console.error(err);
+      toast.error("File upload failed!");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTweet = (e) => {
     e.preventDefault();
-
     if (!loggedinuser.length) {
       toast.error("User info not loaded yet.");
       return;
     }
-
+    setIsTweeting(true);
     const userpost = {
-      name: loggedinuser[0]?.name,
-      username: email?.split("@")[0],
-      profilephoto: userProfilePic,
+      name: loggedinuser[0]?.name || user?.displayName,
+      username: loggedinuser[0]?.username || user?.email?.split("@")[0],
+      profilephoto: loggedinuser[0]?.profileImage || user?.photoURL,
       post: post,
-      photo: imageurl,
-      email: email,
-      timestamp: new Date().toISOString(),
+      photo: mediaUrl,
+      email: user?.email,
     };
-
     fetch("http://localhost:5000/createpost", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userpost),
     })
-      .then(async (res) => {
-        const data = await res.json();
-
-        if (!res.ok) {
-          // ⚠️ Show toast with message from backend
-          toast.error(data.message || "Post failed!");
-          return;
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            toast.error(data.message || "Failed to post tweet.");
+        } else {
+            toast.success("Tweet posted successfully!");
+            setPost("");
+            setMediaUrl("");
+            if(onPost) onPost(); // Refresh the feed
         }
-
-        toast.success("Tweet posted!");
-        setPost("");
-        setImageurl("");
-      })
-      .catch((err) => {
+    })
+    .catch((err) => {
         console.error(err);
-        toast.error("Something went wrong!");
-      });
+        toast.error("An error occurred while posting.");
+    })
+    .finally(() => {
+        setIsTweeting(false);
+    });
   };
-
 
   return (
     <div className="tweetBox">
       <form onSubmit={handleTweet}>
         <div className="tweetBox__input">
-          <Avatar src={userProfilePic} />
-          <input
-            type="text"
-            placeholder="What's happening?"
-            onChange={(e) => setPost(e.target.value)}
-            value={post}
-            required
-          />
+          <Avatar src={loggedinuser[0]?.profileImage || user?.photoURL} />
+          <input type="text" placeholder="What's happening?" onChange={(e) => setPost(e.target.value)} value={post} required />
         </div>
-
         <div className="imageIcon_tweetButton">
-          <label htmlFor="image" className="imageIcon">
-            {isloading ? (
-              <p>Uploading Image...</p>
-            ) : (
-              <p>
-                {imageurl ? "Image Uploaded" : <AddPhotoAlternateOutlinedIcon />}
-              </p>
-            )}
+          <label htmlFor="file-upload" className="imageIcon">
+            {isLoading ? <p>Uploading...</p> : (mediaUrl ? <p>File Ready</p> : <AddPhotoAlternateOutlinedIcon />)}
           </label>
-          <input
-            type="file"
-            id="image"
-            className="imageInput"
-            onChange={handleUploadImage}
-          />
-
-          <Button
-            className="tweetBox__tweetButton"
-            type="submit"
-            disabled={isloading || post.trim() === ""}
-          >
-            Tweet
+          <input type="file" id="file-upload" className="imageInput" onChange={handleFileUpload} accept="image/*,video/*" />
+          <Button className="tweetBox__tweetButton" type="submit" disabled={isLoading || isTweeting || post.trim() === ""}>
+            {isTweeting ? "Posting..." : "Tweet"}
           </Button>
         </div>
       </form>

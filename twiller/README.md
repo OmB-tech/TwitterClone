@@ -1,31 +1,108 @@
-# React & Tailwind CSS Starter Pack
+Twiller - A Modern Social Media Platform
+Twiller is a feature-rich social media web application built with the MERN stack (MongoDB, Express, React, Node.js) and integrated with Firebase for robust authentication and user management. It's designed to provide a dynamic and interactive user experience, incorporating several advanced features beyond a typical clone.
 
-This is a starter pack for creating React projects with Tailwind CSS configured. It uses React version **18.2** and Tailwind CSS version **3.2**.
+✨ Features
+👤 User Authentication: Secure user registration and login using email/password and Google OAuth, powered by Firebase Authentication.
 
-## Usage
+📝 Dynamic Posting Rules: A "Public Space" concept where a user's ability to post is tied to their social engagement:
 
-This starter pack includes a basic setup for using **Tailwind CSS with React**. To start building your own components and styles, follow these steps:
+0 Following: Can post once a day, only between 10:00 AM and 10:30 AM IST.
 
-1. Clone the repository to your local machine.
-    ```sh
-    git clone https://github.com/thepranaygupta/react-tailwind-css-starter-pack.git
-    ```
+1-10 Following: Can post up to twice a day.
 
-1. Install the required packages.
-    ```sh
-    cd react-tailwind-css-starter-pack
-    npm install
-    ```
+10+ Following: Can post an unlimited number of times.
 
-1. Start the development server.
-    ```sh
-    npm start
-    ```
-1. Open the project in your browser at [`http://localhost:3000`](http://localhost:3000) to view your project.
-1. Create your React components and add your styles using Tailwind classes. You can also create new CSS files and import them into your components.
+▶️ Custom Video Player: An interactive, gesture-based video player for all video content:
 
-The project is set up to use `postcss-cli` to process your CSS files. You can add your own `tailwind.config.js` file to customize your Tailwind setup.
+Single Tap (Center): Play/Pause.
 
-## Contributing
+Double Tap (Center): Toggle fullscreen.
 
-Contributions are welcome! If you have any suggestions or find any issues, please feel free to open an issue or a pull request.
+Double Tap (Left/Right): Seek 10 seconds backward/forward.
+
+Triple Tap (Center): Automatically finds and scrolls to the next video in the feed.
+
+Triple Tap (Left): Toggles the comment section.
+
+Triple Tap (Right): Opens a confirmation dialog to close the website.
+
+🔐 Secure Password Reset: A "Forgot Password" flow that generates a random, secure password (no special characters or numbers) and emails it to the user. Includes a rate limit of one request per 24 hours.
+
+🌍 Multi-Language Support: The application supports 6 languages (English, Spanish, Hindi, French, Portuguese, Chinese). Switching languages requires OTP verification for security:
+
+French: Requires a one-time password (OTP) sent to the user's registered email.
+
+Other Languages: Requires OTP verification via the user's registered and verified phone number.
+
+👥 Social Features: Users can follow/unfollow others, view profiles, and see posts from the people they follow in their main feed.
+
+💬 Interactive Posts: Users can post text, images, and videos, and reply to posts in a comment section.
+
+🛠️ Tech Stack
+Frontend: React, React Router, Material-UI, i18next
+
+Backend: Node.js, Express.js
+
+Database: MongoDB with Mongoose
+
+Authentication: Firebase Authentication (Email/Password, Google, Phone)
+
+Media Uploads: Cloudinary API
+
+Email Service: Nodemailer
+
+🚀 Getting Started
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing.
+
+Prerequisites
+Node.js and npm installed
+
+A MongoDB Atlas account or a local MongoDB instance
+
+A Firebase project
+
+A Cloudinary account
+
+Backend Setup
+Navigate to the server directory:
+
+cd server
+
+Install the required npm packages:
+
+npm install
+
+Create a .env file in the server directory and add the following environment variables:
+
+PORT=5000
+MONGO_URI='your_mongodb_connection_string'
+EMAIL_USER='your_gmail_address'
+EMAIL_PASS='your_gmail_app_password'
+
+Start the backend server:
+
+npm start
+
+Frontend Setup
+Navigate to the twiller directory:
+
+cd twiller
+
+Install the required npm packages:
+
+npm install
+
+Create a .env file in the twiller directory and add your Firebase project configuration:
+
+REACT_APP_FIREBASE_API_KEY=your_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+
+Start the frontend development server:
+
+npm start
+
+The application should now be running on http://localhost:3000.

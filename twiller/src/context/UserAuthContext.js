@@ -7,16 +7,31 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "./firbase";
+import { auth } from "./firebase";
 
 const userAuthContext = createContext();
 
 export function UserAuthContextProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
-  function logIn(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  const syncUserProfile = async (firebaseUser) => {
+    return fetch("http://localhost:5000/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+        profileImage: firebaseUser.photoURL || "",
+        uid: firebaseUser.uid,
+      }),
+    });
+  };
+
+  async function logIn(email, password) {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await syncUserProfile(result.user);
+    return result;
   }
 
   function signUp(email, password) {
@@ -29,22 +44,23 @@ export function UserAuthContextProvider({ children }) {
 
   function googleSignIn() {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    return signInWithPopup(auth, provider).then(async (result) => {
+      await syncUserProfile(result.user);
+      return result;
+    });
   }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("Auth state changed:", currentUser);
       setUser(currentUser);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
   return (
-    <userAuthContext.Provider value={{ user, logIn, signUp, logOut, googleSignIn }}>
-      {!loading && children} 
+    <userAuthContext.Provider value={{ user, loading, logIn, signUp, logOut, googleSignIn }}>
+      {!loading && children}
     </userAuthContext.Provider>
   );
 }

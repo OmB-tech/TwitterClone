@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./forgotPassword.css";   // use a new CSS file for clarity
+import "./forgotPassword.css"; 
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 

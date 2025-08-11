@@ -21,7 +21,7 @@ const Home = () => {
   };
   return (
     <div className="app">
-      <Sidebar handlelogout={handlelogout} user={user} />      {/*passing handlelogout as props to use latter */}
+      <Sidebar handlelogout={handlelogout} user={user} />      
       <Outlet />  
       <Widgets />
     </div>

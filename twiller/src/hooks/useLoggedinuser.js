@@ -8,21 +8,25 @@ const useLoggedinuser = () => {
 
   useEffect(() => {
     const fetchLoggedInUser = async () => {
+      if (!user?.uid) {
+        setLoadingUser(false);
+        return;
+      }
+      setLoadingUser(true);
       try {
-        const res = await fetch(`http://localhost:5000/loggedinuser?email=${user?.email}`);
+        const res = await fetch(`http://localhost:5000/loggedinuser?uid=${user.uid}`);
         const data = await res.json();
         setLoggedinuser(data);
       } catch (err) {
-        console.error("Failed to load user", err);
+        console.error("[useLoggedinuser] Fetch FAILED. Error:", err);
+        setLoggedinuser([]);
       } finally {
         setLoadingUser(false);
       }
     };
 
-    if (user?.email) {
-      fetchLoggedInUser();
-    }
-  }, [user?.email]);
+    fetchLoggedInUser();
+  }, [user?.uid]);
 
   return [loggedinuser, loadingUser];
 };

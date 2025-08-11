@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import { useState} from "react";
 import twitterimg from "../../image/twitter.jpeg";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import GoogleButton from "react-google-button";
@@ -22,10 +22,11 @@ const Login = () => {
       window.alert(error.message);
     }
   };
+
   const hanglegooglesignin = async (e) => {
     e.preventDefault();
     try {
-      await googleSignIn();
+      await googleSignIn(); 
       navigate("/");
     } catch (error) {
       console.log(error.message);
