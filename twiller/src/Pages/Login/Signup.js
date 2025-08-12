@@ -12,12 +12,26 @@ const Signup = () => {
   const [email, setemail] = useState("");
   const [error, seterror] = useState("");
   const [password, setpassword] = useState("");
+  
+  // --- FIX 1: Add loading state ---
+  const [loading, setLoading] = useState(false);
+  
   const { signUp, googleSignIn } = useUserAuth();
   const navigate = useNavigate();
 
   const handlesubmit = async (e) => {
     e.preventDefault();
     seterror("");
+
+    // Basic validation
+    if (!username || !name || !email || !password) {
+        seterror("All fields are required.");
+        return;
+    }
+    
+    // --- FIX 2: Set loading to true to disable button ---
+    setLoading(true);
+
     try {
       const result = await signUp(email, password);
       await fetch("https://twitterclone-1-uvwk.onrender.com/register", {
@@ -33,7 +47,11 @@ const Signup = () => {
       navigate("/");
     } catch (err) {
       seterror(err.message);
-      window.alert(err.message);
+      // window.alert is generally not recommended for good UX
+      // The error message displayed on the page is better
+    } finally {
+      // --- FIX 3: Set loading back to false when request finishes ---
+      setLoading(false);
     }
   };
 
@@ -44,6 +62,7 @@ const Signup = () => {
       navigate("/");
     } catch (error) {
       console.log(error.message);
+      seterror(error.message);
     }
   };
 
@@ -66,7 +85,12 @@ const Signup = () => {
               <input className="display-name" type="text" placeholder="Enter Full Name" onChange={(e) => setname(e.target.value)} />
               <input className="email" type="email" placeholder="Email Address" onChange={(e) => setemail(e.target.value)} />
               <input className="password" type="password" placeholder="Password" onChange={(e) => setpassword(e.target.value)} />
-              <div className="btn-login"><button type="submit" className="btn">Sign Up</button></div>
+              <div className="btn-login">
+                {/* --- FIX 4: Disable button and change text when loading --- */}
+                <button type="submit" className="btn" disabled={loading}>
+                  {loading ? "Signing up..." : "Sign Up"}
+                </button>
+              </div>
             </form>
             <hr />
             <div className="gog-btn"><GoogleButton className="g-btn" type="light" onClick={hanglegooglesignin} /></div>

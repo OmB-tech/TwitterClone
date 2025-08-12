@@ -16,21 +16,23 @@ const Mainprofile = () => {
   const { username: routeUsername } = useParams();
   const navigate = useNavigate();
   const { user } = useUserAuth();
-  const [loggedinuser] = useLoggedinuser();
+
+  const [loggedinuser, loadingUser] = useLoggedinuser();
+
   const [profileUser, setProfileUser] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(true); // Separate loading for posts
+  const [isUploading, setIsUploading] = useState(false); // Renamed from isLoading to avoid confusion
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const avatarList = Array.from({ length: 16 }, (_, i) => `/avatars/${i + 1}_final.svg`);
   const avatarRef = useRef();
 
-  const username = routeUsername || loggedinuser[0]?.username;
-  const isOwnProfile = loggedinuser[0]?.email === profileUser?.email;
+  // Determine the username to fetch, but wait until user data is loaded
+  const username = routeUsername || (!loadingUser && loggedinuser[0]?.username);
 
   const fetchUserAndPosts = useCallback(async () => {
     if (!username) return;
-    setLoading(true);
+    setLoadingPosts(true);
     try {
       const userRes = await fetch(`https://twitterclone-1-uvwk.onrender.com/users?username=${username}`);
       const userData = await userRes.json();
@@ -49,7 +51,7 @@ const Mainprofile = () => {
     } catch (err) {
       console.error("Error fetching user/posts:", err);
     } finally {
-      setLoading(false);
+      setLoadingPosts(false);
     }
   }, [username]);
 
@@ -72,8 +74,11 @@ const Mainprofile = () => {
     };
   }, [showAvatarPicker]);
 
+  // --- FIX: The `isOwnProfile` check is now reliable because we wait for data ---
+  const isOwnProfile = !loadingUser && loggedinuser[0]?.email === profileUser?.email;
+
   const handleUploadImage = (e, type) => {
-    setIsLoading(true);
+    setIsUploading(true);
     const image = e.target.files[0];
     const formData = new FormData();
     formData.set("image", image);
@@ -98,18 +103,18 @@ const Mainprofile = () => {
               ...(type === "cover" ? { coverImage: url } : { profileImage: url }),
             }));
             setShowAvatarPicker(false);
-            setIsLoading(false);
+            setIsUploading(false);
           });
       })
       .catch((err) => {
         console.error(err);
         toast.error("Image upload failed. Please try again.");
-        setIsLoading(false);
+        setIsUploading(false);
       });
   };
 
   const handleAvatarSelect = (avatarUrl) => {
-    setIsLoading(true);
+    setIsUploading(true);
     const payload = { email: profileUser.email, profileImage: avatarUrl };
     fetch(`https://twitterclone-1-uvwk.onrender.com/userupdate/${profileUser.email}`, {
       method: "PATCH",
@@ -123,11 +128,17 @@ const Mainprofile = () => {
           profileImage: avatarUrl,
         }));
         setShowAvatarPicker(false);
-        setIsLoading(false);
+        setIsUploading(false);
       });
   };
+  if (loadingUser || loadingPosts) {
+    return (
+      <div className="w-full h-screen flex justify-center items-center">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
 
-  if (loading) return <div>Loading...</div>;
   if (!profileUser) return <div>User not found</div>;
 
   return (
@@ -144,7 +155,7 @@ const Mainprofile = () => {
         {isOwnProfile && (
           <div className="hoverCoverImage">
             <label htmlFor="cover-upload">
-              {isLoading ? <LockResetIcon /> : <CenterFocusWeakIcon />}
+              {isUploading ? <div className="spinner"></div> : <CenterFocusWeakIcon />}
             </label>
             <input
               type="file"
@@ -158,7 +169,7 @@ const Mainprofile = () => {
 
       <div className="avatar-img">
         <div className="avatarContainer" ref={avatarRef}>
-          {isLoading ? (
+          {isUploading ? (
             <div className="spinner" />
           ) : (
             <img
